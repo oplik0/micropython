@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if which nproc > /dev/null; then
+if which nproc >/dev/null; then
     MAKEOPTS="-j$(nproc)"
 else
     MAKEOPTS="-j$(sysctl -n hw.ncpu)"
@@ -132,7 +132,7 @@ function ci_cc3200_setup {
 
 function ci_cc3200_build {
     make ${MAKEOPTS} -C ports/cc3200 BTARGET=application BTYPE=release
-    make ${MAKEOPTS} -C ports/cc3200 BTARGET=bootloader  BTYPE=release
+    make ${MAKEOPTS} -C ports/cc3200 BTARGET=bootloader BTYPE=release
 }
 
 ########################################################################################
@@ -353,6 +353,9 @@ function ci_rp2_build {
     # Test building ninaw10 driver and NIC interface.
     make ${MAKEOPTS} -C ports/rp2 BOARD=ARDUINO_NANO_RP2040_CONNECT submodules
     make ${MAKEOPTS} -C ports/rp2 BOARD=ARDUINO_NANO_RP2040_CONNECT
+
+    make ${MAKEOPTS} -C ports/rp2 BOARD=SEEED_XIAO_RP2040 submodules
+    make ${MAKEOPTS} -C ports/rp2 BOARD=SEEED_XIAO_RP2040
 }
 
 ########################################################################################
@@ -417,7 +420,7 @@ function ci_stm32_nucleo_build {
     python3 ports/stm32/mboot/mboot_pack_dfu.py -k $BOARD_WB55/mboot_keys.h unpack-dfu $BUILD_WB55/firmware.pack.dfu $BUILD_WB55/firmware.unpack.dfu
     diff $BUILD_WB55/firmware.unpack.dfu $BUILD_WB55/firmware.dfu
     # Test unpack-dfu command works without a secret key
-    tail -n +2 $BOARD_WB55/mboot_keys.h > $BOARD_WB55/mboot_keys_no_sk.h
+    tail -n +2 $BOARD_WB55/mboot_keys.h >$BOARD_WB55/mboot_keys_no_sk.h
     python3 ports/stm32/mboot/mboot_pack_dfu.py -k $BOARD_WB55/mboot_keys_no_sk.h unpack-dfu $BUILD_WB55/firmware.pack.dfu $BUILD_WB55/firmware.unpack_no_sk.dfu
     diff $BUILD_WB55/firmware.unpack.dfu $BUILD_WB55/firmware.unpack_no_sk.dfu
 }
@@ -493,8 +496,7 @@ function ci_native_mpy_modules_build {
     else
         arch=$1
     fi
-    for natmod in features1 features3 features4 deflate framebuf heapq random re
-    do
+    for natmod in features1 features3 features4 deflate framebuf heapq random re; do
         make -C examples/natmod/$natmod ARCH=$arch
     done
     # btree requires thread local storage support on rv32imc.
@@ -565,13 +567,13 @@ function ci_unix_coverage_run_mpy_merge_tests {
         echo $test
         outmpy=$outdir/$test.mpy
         $mptop/mpy-cross/build/mpy-cross -o $outmpy $inpy
-        (cd $outdir && $mptop/ports/unix/build-coverage/micropython -m $test >> out-individual)
+        (cd $outdir && $mptop/ports/unix/build-coverage/micropython -m $test >>out-individual)
         allmpy+=($outmpy)
     done
 
     # Merge all the tests into one .mpy file, and then execute it.
     python3 $mptop/tools/mpy-tool.py --merge -o $outdir/merged.mpy ${allmpy[@]}
-    (cd $outdir && $mptop/ports/unix/build-coverage/micropython -m merged > out-merged)
+    (cd $outdir && $mptop/ports/unix/build-coverage/micropython -m merged >out-merged)
 
     # Make sure the outputs match.
     diff $outdir/out-individual $outdir/out-merged && /bin/rm -rf $outdir
@@ -781,14 +783,14 @@ function ci_zephyr_setup {
     mkdir -p "${CCACHE_DIR}"
 
     docker run --name zephyr-ci -d -it \
-      -v "$(pwd)":/micropython \
-      -v "${ZEPHYRPROJECT_DIR}":/zephyrproject \
-      -v "${CCACHE_DIR}":/root/.cache/ccache \
-      -e ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-${ZEPHYR_SDK_VERSION} \
-      -e ZEPHYR_TOOLCHAIN_VARIANT=zephyr \
-      -e ZEPHYR_BASE=/zephyrproject/zephyr \
-      -w /micropython/ports/zephyr \
-      ${IMAGE}
+        -v "$(pwd)":/micropython \
+        -v "${ZEPHYRPROJECT_DIR}":/zephyrproject \
+        -v "${CCACHE_DIR}":/root/.cache/ccache \
+        -e ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-${ZEPHYR_SDK_VERSION} \
+        -e ZEPHYR_TOOLCHAIN_VARIANT=zephyr \
+        -e ZEPHYR_BASE=/zephyrproject/zephyr \
+        -w /micropython/ports/zephyr \
+        ${IMAGE}
     docker ps -a
 
     # qemu-system-arm is needed to run the test suite.
