@@ -35,4 +35,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: rp2
-        path: ports/rp2/**/firmware.uf2
+        path: "**/*.uf2"
